@@ -15,9 +15,12 @@
  */
 package com.example.waterme.worker
 
+import android.Manifest
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.Worker
@@ -28,7 +31,7 @@ import com.example.waterme.R
 
 class WaterReminderWorker(
     context: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
 ) : Worker(context, workerParams) {
 
     // Arbitrary id number
@@ -40,7 +43,7 @@ class WaterReminderWorker(
         }
 
         val pendingIntent: PendingIntent = PendingIntent
-            .getActivity(applicationContext, 0, intent, 0)
+            .getActivity(applicationContext, 0, intent, PendingIntent.FLAG_IMMUTABLE)
 
         val plantName = inputData.getString(nameKey)
 
@@ -53,10 +56,16 @@ class WaterReminderWorker(
             .setAutoCancel(true)
 
         with(NotificationManagerCompat.from(applicationContext)) {
+            if (ActivityCompat.checkSelfPermission(
+                    applicationContext,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return Result.failure()
+            }
             notify(notificationId, builder.build())
+            return Result.success()
         }
-
-        return Result.success()
     }
 
     companion object {
